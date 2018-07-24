@@ -1,16 +1,54 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"github.com/labstack/echo"
 
 	"github.com/eggegg/Doraemon/bindings"
 	"github.com/eggegg/Doraemon/renderings"
 	"github.com/eggegg/Doraemon/middlewares"
+	"github.com/eggegg/Doraemon/models"
+	"github.com/eggegg/Doraemon/utils"
 	
 	uuid "github.com/satori/go.uuid"
+
+	redigo "github.com/garyburd/redigo/redis"
+
 	
 )
+
+
+//-------------------
+// Check Redis status
+//-------------------
+func DbStatus(c echo.Context) error {
+	resp := renderings.NormalResponse{}
+	// get redis from context
+	db := c.Get(models.RedisContextKey).(*utils.Cache)
+	
+	// get redis conn from pool
+	conn := db.Pool.Get()
+	defer conn.Close()
+
+	testkey := "test_key"
+	conn.Send("SET", testkey, "zaker")
+	conn.Send("EXPIRE", testkey, 10)
+
+	values, err := redigo.String(conn.Do("GET", testkey))
+	if err != nil{
+		c.Logger().Error("Redis get err:", err)
+		resp.Success = false
+		resp.Message = "Unable to bind request for get ad"
+		return c.JSON(http.StatusBadRequest, resp)
+	}
+	c.Logger().Errorf("Redis test get value:%s", values)
+
+
+	resp.Success = true
+	resp.Message = fmt.Sprintf("Redis OK:%s", values)
+	return c.JSON(http.StatusOK, resp)
+}
 
 func GetAd(c echo.Context) error {
 	c.Logger().Debugf("RequestID: %s", c.Get(middlewares.RequestIDContextKey).(uuid.UUID))	
@@ -33,7 +71,21 @@ func GetAd(c echo.Context) error {
 	c.Logger().Errorf("request: %v",ar)
 
 	// get redis from context
-	//db := c.Get(models.DBContextKey).(*sql.DB)
+	db := c.Get(models.RedisContextKey).(*utils.Cache)
+
+	// get redis conn from pool
+	conn := db.Pool.Get()
+	defer conn.Close()
+
+	testkey := "test_key"
+	conn.Send("SET", testkey, "zaker")
+	conn.Send("EXPIRE", testkey, 10)
+
+	values, err := redigo.String(conn.Do("GET", testkey))
+	if err != nil{
+		c.Logger().Error("Redis get err:", err)
+	}
+	c.Logger().Errorf("Redis test get value:%s", values)
 	
 	// search ad from task timeline list model
 	// user, err := models.GetUserByUsername(db, lr.Username)

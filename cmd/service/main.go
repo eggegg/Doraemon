@@ -1,30 +1,58 @@
 package main
 
 import (
+	"flag"
         "time"
         "os"
         "os/signal"
+        "fmt"
         "context"
+        configuration "github.com/eggegg/Doraemon/config"
         "github.com/eggegg/Doraemon/handlers"
         "github.com/eggegg/Doraemon/bindings"        
         "github.com/eggegg/Doraemon/middlewares"
-        _"github.com/eggegg/Doraemon/models"
+        "github.com/eggegg/Doraemon/models"
+        "github.com/eggegg/Doraemon/utils"
+        
 
         "github.com/labstack/echo"
         "github.com/labstack/echo/middleware"        
         "github.com/labstack/gommon/log"
 
+        // mgo "gopkg.in/mgo.v2"
+        // _ "gopkg.in/mgo.v2/bson"
+
 )
 
 func main() {
-        // create a new echo instance
+        //-------------------
+        // Load Configuration file
+        //-------------------
+        configPath := flag.String("config", "../../config/config.json", "path of the config file")
+
+        flag.Parse()
+        // Read config
+        config, err := configuration.FromFile(*configPath)
+        if err != nil {
+                log.Fatal(err)
+        }
+
+        //-------------------
+        // Create a new echo instance
+        //-------------------
         e := echo.New()
-        e.Logger.SetLevel(log.DEBUG)
 	e.Validator = new(bindings.Validator)        
       
         e.Pre(middlewares.RequestIDMiddleware)
 
-        e.Use(middleware.Logger())  // logger middleware will “wrap” recovery
+        e.Logger.SetLevel(configuration.GetLogLvl(config.LogLevel))
+        if config.LogLevel == "DEBUG" {
+                fmt.Println("DEBUG MODE")
+                e.Debug = true
+                e.Use(middleware.Logger())  // logger middleware will “wrap” recovery                
+        }
+        e.HideBanner = false
+
         e.Use(middleware.Recover()) // as it is enumerated before in the Use calls
 
         //-------------------
@@ -37,12 +65,35 @@ func main() {
 
         //-------------------
 	// Custom middleware
-	//-------------------
+        //-------------------
+        
 	// Stats
 	s := middlewares.NewStats()
 	e.Use(s.Process)
-	e.GET("/stats", s.Handle) // Endpoint to get stats
+        e.GET("/stats", s.Handle) // Endpoint to get stats
         
+
+        //-------------------
+	// Add Redis to context
+        //-------------------
+        redisCache := utils.Cache {
+                MaxIdle: 100,
+                MaxActive: 100,
+                IdleTimeoutSecs: 60,
+                Address: fmt.Sprintf("%s:%s", config.Redis.Host, config.Redis.Port),
+        }
+        redisCache.Pool = redisCache.NewCachePool()
+        e.Use(func (next echo.HandlerFunc) echo.HandlerFunc {
+                return func (c echo.Context) error {
+                        c.Set(models.RedisContextKey, &redisCache)
+                        return next(c)
+                }
+        })
+
+        //-------------------
+	// Route
+        //-------------------
+
         e.File("/", "static/index.html")
 
         // in order to serve static assets
@@ -50,6 +101,7 @@ func main() {
         
          // Route 
          e.GET("/health-check", handlers.HealthCheck)
+         e.GET("/db-check", handlers.DbStatus)
          e.GET("/error", handlers.Error)
 
         // V1 Routes
@@ -71,7 +123,7 @@ func main() {
 
         // Start server with GraceShutdown
         go func() {
-                if err := e.Start(":8080");err != nil {
+                if err := e.Start(fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port));err != nil {
                         e.Logger.Info("shutting down the server.")
                 }
         }()    
