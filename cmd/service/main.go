@@ -1,7 +1,12 @@
 package main
 
 import (
+        "time"
+        "os"
+        "os/signal"
+        "context"
         "github.com/eggegg/Doraemon/handlers"
+        "github.com/eggegg/Doraemon/bindings"        
         "github.com/eggegg/Doraemon/middlewares"
         _"github.com/eggegg/Doraemon/models"
 
@@ -14,9 +19,8 @@ func main() {
         // create a new echo instance
         e := echo.New()
         e.Logger.SetLevel(log.DEBUG)
-
+	e.Validator = new(bindings.Validator)        
       
-
         e.Pre(middlewares.RequestIDMiddleware)
 
         e.Use(middleware.Logger())  // logger middleware will “wrap” recovery
@@ -44,6 +48,24 @@ func main() {
         v1.GET("/ad-show", handlers.AdShow)
         
 
-        // start the server, and log if it fails             
-	e.Logger.Fatal(e.Start(":8080")) 
+        // Start server with GraceShutdown
+        go func() {
+                if err := e.Start(":8080");err != nil {
+                        e.Logger.Info("shutting down the server.")
+                }
+        }()    
+
+        // Wait for interrupt signal to gracefuly shutdown the server with 
+        // a timeout of 10 seconds.
+        quit := make(chan os.Signal)
+        signal.Notify(quit, os.Interrupt, os.Kill)
+
+        <- quit
+
+        ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+        defer cancel()
+        if err := e.Shutdown(ctx); err != nil {
+                e.Logger.Fatal(err)
+        }
+	
 }

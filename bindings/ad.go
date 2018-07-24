@@ -7,11 +7,11 @@ type AdRequest struct {
 
 func (ar AdRequest) Validate() error {
 	errs := new(RequestErrors)
-	if lr.Username == "" {
-		errs.Append(ErrUsernameEmpty)
+	if ar.F == "" {
+		errs.Append(ErrFEmpty)
 	}
-	if lr.Password == "" {
-		errs.Append(ErrPasswordEmpty)
+	if ar.Uid == "" {
+		errs.Append(ErrUidEmpty)
 	}
 	if errs.Len() == 0 {
 		return nil
