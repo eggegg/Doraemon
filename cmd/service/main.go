@@ -13,6 +13,7 @@ import (
         "github.com/labstack/echo"
         "github.com/labstack/echo/middleware"        
         "github.com/labstack/gommon/log"
+
 )
 
 func main() {
@@ -25,6 +26,22 @@ func main() {
 
         e.Use(middleware.Logger())  // logger middleware will “wrap” recovery
         e.Use(middleware.Recover()) // as it is enumerated before in the Use calls
+
+        //-------------------
+        // HTML page rendering
+        //-------------------
+        renderer := handlers.Renderer{
+		Debug: false,
+        }
+        e.Renderer = renderer
+
+        //-------------------
+	// Custom middleware
+	//-------------------
+	// Stats
+	s := middlewares.NewStats()
+	e.Use(s.Process)
+	e.GET("/stats", s.Handle) // Endpoint to get stats
         
         e.File("/", "static/index.html")
 
@@ -38,6 +55,10 @@ func main() {
         // V1 Routes
         v1 := e.Group("/v1")
 
+        // Static HTML Page
+        v1.GET("/html-index", handlers.HtmlIndex)
+
+        
         // Test 
         v1.GET("/test-get-ad", handlers.GetTestAd)
         v1.GET("/test-ad-click", handlers.TestAdClick)

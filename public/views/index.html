@@ -1,0 +1,12 @@
+<html>
+    <body>
+        <p>My name: {{ name }}</p>
+        <p>The answer: {{ answer() }}</p>
+        <p>
+          Items:
+          {% for item in items %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </p>
+    </body>
+</html>
