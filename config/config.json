@@ -8,7 +8,7 @@
         "port": "6379"
     },
     "mongodb": {
-        "host": "127.0.0.1",
+        "host": "192.168.10.10",
         "port": "27017"
     },
     "loglevel": "DEBUG"

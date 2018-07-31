@@ -1,7 +1,12 @@
 package models
 
 import (
+	mgo "gopkg.in/mgo.v2"	
 	"gopkg.in/mgo.v2/bson"	
+
+	"github.com/pkg/errors"
+
+	"github.com/eggegg/Doraemon/utils"
 )
 
 // task_list 
@@ -32,4 +37,61 @@ type TaskList struct {
 	FinishPvNum int `json:"finish_pv_num" bson:"finish_pv_num"`  
 	FinishIpNum int `json:"finish_ip_num" bson:"finish_ip_num"`  	
 	
+}
+
+func GetAllTaskListFromDb(session *mgo.Session) ([]TaskList, error)  {
+	var taskList []TaskList
+
+	db := session.Copy()
+	defer db.Close()
+
+	curTime := utils.GetFormattedDateTime("min")
+
+	c := db.DB("liuliang").C("task_list")
+	err := c.Find(bson.M{
+		"stat":1,
+		"task_begin_time" : bson.M{"$lt": curTime},
+		"task_end_time" : bson.M{"$gt": curTime},
+	}).All(&taskList)
+	if err != nil {
+		return taskList, errors.Wrap(err, "mongodb query error: ")
+	}
+
+	return taskList, nil
+}
+
+// get task_list by id
+func GetTaskListById(session *mgo.Session, id string) (TaskList, error) {
+	db := session.Copy()
+	defer db.Close()
+
+	var taskList TaskList
+	c := db.DB("liuliang").C("task_list")
+	err := c.FindId(bson.ObjectIdHex(id)).One(&taskList)
+	if err != nil {
+		return taskList, err
+	}
+
+	return taskList, nil
+}
+
+// set task_list finish
+func SetTaskListFinish(session *mgo.Session, id string) error {
+	db := session.Copy()
+	defer db.Close()
+
+	c := db.DB("liuliang").C("task_list")
+	err := c.Update(bson.M{
+		"_id": id,
+	}, bson.M{
+		"$set": bson.M{
+			"finish_stat" : 1,
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+	return nil
+
 }

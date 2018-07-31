@@ -14,13 +14,16 @@ import (
         "github.com/eggegg/Doraemon/models"
         "github.com/eggegg/Doraemon/utils"
         
+        "github.com/eggegg/Doraemon/helpers/cronjob"
+        "github.com/eggegg/Doraemon/helpers/env"
+        
 
         "github.com/labstack/echo"
         "github.com/labstack/echo/middleware"        
         "github.com/labstack/gommon/log"
 
-        // mgo "gopkg.in/mgo.v2"
-        // _ "gopkg.in/mgo.v2/bson"
+        mgo "gopkg.in/mgo.v2"
+        _ "gopkg.in/mgo.v2/bson"
 
 )
 
@@ -91,6 +94,24 @@ func main() {
         })
 
         //-------------------
+	// Mongo
+        //-------------------
+        host := []string{
+		fmt.Sprintf("%s:%s",config.Mongodb.Host, config.Mongodb.Port),
+	}
+	session, err := mgo.DialWithInfo(&mgo.DialInfo{
+		Addrs: host,
+		Direct: true,
+		Timeout: 5 * time.Second,
+	})
+	session.SetMode(mgo.Monotonic, true)
+	if err != nil {
+		e.Logger.Info("cannot connect to :" + fmt.Sprintf("%s:%s",config.Mongodb.Host, config.Mongodb.Port))
+		panic(err)
+	}
+	defer session.Close()
+
+        //-------------------
 	// Route
         //-------------------
 
@@ -119,9 +140,19 @@ func main() {
         v1.GET("/get-ad", handlers.GetAd)
         v1.GET("/ad-click", handlers.AdClick)
         v1.GET("/ad-show", handlers.AdShow)
+
+        //-------------------
+	// Cron job load redis to cache
+        //-------------------
+        dbhandler := env.CreateHandler(&redisCache, session)
+        go cronjob.Start(dbhandler)
         
 
-        // Start server with GraceShutdown
+
+
+        //-------------------
+	// Start server with GraceShutdown
+        //-------------------
         go func() {
                 if err := e.Start(fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port));err != nil {
                         e.Logger.Info("shutting down the server.")
