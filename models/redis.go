@@ -14,11 +14,15 @@ import (
 
 
 const (
+	//广告缓存数据
 	TASK_TIMELINE_LIST_SET = "task_timeline_list_set"
 	TASK_TIMELINE_LIST_AD = "task_timeline_list_"
 
-
 	TASK_AD_EXPIRE = 60*60*24
+
+
+	//日志队列
+	TASK_FINISH_QUEUE = "task_finish_queue"
 )
 
 func MarkResetCacheTime(cache utils.Cache, key string) (int, error){

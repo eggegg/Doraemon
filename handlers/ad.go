@@ -15,6 +15,8 @@ import (
 
 	redigo "github.com/garyburd/redigo/redis"
 
+	"encoding/json"
+
 	
 )
 
@@ -70,22 +72,30 @@ func GetAd(c echo.Context) error {
 	} 
 	c.Logger().Errorf("request: %v",ar)
 
+
+	// Get Redis
 	// get redis from context
 	db := c.Get(models.RedisContextKey).(*utils.Cache)
 
-	// get redis conn from pool
-	conn := db.Pool.Get()
-	defer conn.Close()
-
-	testkey := "test_key"
-	conn.Send("SET", testkey, "zaker")
-	conn.Send("EXPIRE", testkey, 10)
-
-	values, err := redigo.String(conn.Do("GET", testkey))
-	if err != nil{
-		c.Logger().Error("Redis get err:", err)
+	//发送成功队列
+	finishStat := models.FinishStat {
+		Task_id: "5b398f436df0907bce3cffe4",
+		Timeline_id : "5b5eeadbbfa809f8e1fa7845",
+		Ip: "192.168.10.10",
+		Dtime: utils.GetCurrentTimestampSec(),
+		Day_new: true,
 	}
-	c.Logger().Errorf("Redis test get value:%s", values)
+	oneStatJson, err := json.Marshal(finishStat)
+	if err != nil {
+		c.Logger().Errorf("finish stat json encode err: %v", err) 
+	}
+
+	c.Logger().Printf("FinishStat: %v", oneStatJson)
+
+	// Send to redis
+	db.EnqueueValue(models.TASK_FINISH_QUEUE, string(oneStatJson) )
+
+	
 	
 	// search ad from task timeline list model
 	// user, err := models.GetUserByUsername(db, lr.Username)

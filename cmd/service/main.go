@@ -14,8 +14,8 @@ import (
         "github.com/eggegg/Doraemon/models"
         "github.com/eggegg/Doraemon/utils"
         
-        "github.com/eggegg/Doraemon/helpers/cronjob"
-        "github.com/eggegg/Doraemon/helpers/env"
+        // "github.com/eggegg/Doraemon/helpers/cronjob"
+        // "github.com/eggegg/Doraemon/helpers/env"
         
 
         "github.com/labstack/echo"
@@ -144,8 +144,8 @@ func main() {
         //-------------------
 	// Cron job load redis to cache
         //-------------------
-        dbhandler := env.CreateHandler(&redisCache, session)
-        go cronjob.Start(dbhandler)
+        // dbhandler := env.CreateHandler(&redisCache, session)
+        // go cronjob.Start(dbhandler)
         
 
 

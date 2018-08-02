@@ -15,11 +15,14 @@ type Config struct {
 	Redis struct {
 		Host string `json:"host"`
 		Port string `json:"port"`
-	} `json:"Redis"`
+	} `json:"redis"`
 	Mongodb struct {
 		Host string `json:"host"`
 		Port string `json:"port"`
-	} `json:"Mongodb"`
+	} `json:"mongodb"`
+	Runner struct{
+		Duration int `json:"duration"`
+	} `json:"runner"`
 	LogLevel string `json:"loglevel"`
 }
 

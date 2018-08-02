@@ -11,5 +11,8 @@
         "host": "192.168.10.10",
         "port": "27017"
     },
+    "runner": {
+        "duration": 5
+    },
     "loglevel": "DEBUG"
 }

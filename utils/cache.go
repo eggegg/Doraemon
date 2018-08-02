@@ -56,21 +56,21 @@ func (cache *Cache) NewCachePool() *redigo.Pool {
 }
 
 
-func (cache *Cache) getValue(key interface{}) (string, error) {
+func (cache *Cache) GetValue(key interface{}) (string, error) {
 		conn := cache.Pool.Get()
 		defer conn.Close()
 		value, err := redigo.String(conn.Do("GET", key))
 		return value, err
 }
 
-func (cache *Cache) setValue(key interface{}, value interface{}) error {
+func (cache *Cache) SetValue(key interface{}, value interface{}) error {
 	conn := cache.Pool.Get()
 	defer conn.Close()
 	_, err := redigo.String(conn.Do("SET", key, value))
 	return err
 }
 
-func (cache *Cache) enqueueValue(queue string, uuid string) error {
+func (cache *Cache) EnqueueValue(queue string, uuid string) error {
 	conn := cache.Pool.Get()
 	defer conn.Close()
 	_, err := conn.Do("RPUSH", queue, uuid)
