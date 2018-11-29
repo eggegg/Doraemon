@@ -73,7 +73,6 @@ func GetAd(c echo.Context) error {
 	c.Logger().Errorf("request: %v",ar)
 
 
-	// Get Redis
 	// get redis from context
 	db := c.Get(models.RedisContextKey).(*utils.Cache)
 

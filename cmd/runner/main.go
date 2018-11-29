@@ -73,19 +73,73 @@ func main() {
 	dbhandler := env.CreateHandler(&redisCache, session)
 	go cronjob.Start(dbhandler)
 
+	err = models.MockQueueData(dbhandler)
+	if err != nil {
+		log.Println("[MockQueue] error", err)
+	}
 
 	//-------------------
 	// Cron job load redis to cache
 	//-------------------
-	var counts map[string]int
+
+
+	
+
+
+	/**
+
+
+	t_hour_key : "h_5"
+	t_5m_key : "5m_12"
+
+
+
+	=========   redis ops:   ====================
+
+	hget: a_(task_id)_(cur_s_date)
+	changeto:
+	hset: a_(task_id)_(cur_s_date), ip, count
+
+
+	hset: hourip_(cur_hour)_(task_id), ip, time()
+	hset: hour_allip_(cur_hour)_(task_id), ip, time()
+
+
+	=========    mongo ops   ====================
+
+	map[task_id.'-'.date]map[string]int
+	- finish_pv_num ++
+	- finish_list_hour["h_5"] ++
+	- finish_list_5m["5m_12"] ++
+	- finish_ip_num -> hlen()
+	- finish_list_ip_hour[t_hour_key] -> hlen()
+	- finish_list_all_ip_hour[t_hour_key] -> hlen()
+
+	
+	map[task_id.'-'.timeline_id] map[string]int
+	- task_id_pv: int
+	- task_id_ip: int
+	- timeline_id: int
+	- timeline_id: int
+
+
+
+
+	**/
+
+	var counts map[models.MapKey]*models.FinishStat
 	var countsLock sync.Mutex
 
 
 	go func ()  {
 		for {
+			// if counts == nil {
+			// 	counts = make(map[string]int)
+			// }
+
 			err := models.ProcessQueue(&countsLock, &counts, dbhandler)
 			if err != nil {
-				log.Println("DoCalculate err")
+				log.Println("DoCalculate err", err)
 				break
 			}
 		}
@@ -94,7 +148,7 @@ func main() {
 			
 		
 
-	log.Println("Waiting for votes on nsq...")
+	log.Println("Waiting for redis queue ...")
 	updateDuration := time.Duration(config.Runner.Duration) * time.Second
 	ticker := time.NewTicker(updateDuration)
 	 

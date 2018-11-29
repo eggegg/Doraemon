@@ -23,6 +23,5 @@ func TestNanoTime(t *testing.T)  {
 		t.Errorf("Error")
 	}
 	fmt.Println(time.Now().UnixNano()/1000000000)
-
-	fmt.Println(GetTime("min"))
+	
 }

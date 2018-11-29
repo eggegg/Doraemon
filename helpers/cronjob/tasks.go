@@ -16,6 +16,7 @@ import (
 //---------------------
 func AdInitialLoadExecutor(h *env.Dbhandler) error {
 	log.Println("conjob:AdInitialLoadExecutor start")
+	return nil
 
 	session := h.Session.Copy()
 	defer session.Close()
